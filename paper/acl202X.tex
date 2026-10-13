@@ -1,0 +1,72 @@
+%%
+%% ACM SIG Proceedings Template
+%% Project Update -- Week 8
+%% Sections live in sections/*.tex; figures are read from ../figures/
+%% Team 5: The Paradox of Authorial Identity
+%%
+\documentclass[sigconf,nonacm]{acmart}
+
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{multirow}
+\usepackage{microtype}
+\usepackage{url}
+\usepackage{enumitem}
+\graphicspath{{../figures/}}
+
+\settopmatter{printacmref=false}
+\renewcommand\footnotetextcopyrightpermission[1]{}
+\pagestyle{plain}
+
+\begin{document}
+
+\title{The Paradox of Authorial Identity: Measuring Style Decay
+and Semantic Retention Under Iterative LLM Paraphrasing}
+
+\author{Preethi Gajawada}
+\affiliation{\institution{Northeastern University}}
+\email{gajawada.p@northeastern.edu}
+
+\author{Tanmayee Durga Bulusu}
+\affiliation{\institution{Northeastern University}}
+\email{bulusu.t@northeastern.edu}
+
+\author{Madhu Babu Cherukuri}
+\affiliation{\institution{Northeastern University}}
+\email{cherukuri.m@northeastern.edu}
+
+\author{Teja Papadasu}
+\affiliation{\institution{Northeastern University}}
+\email{papadasu.t@northeastern.edu}
+
+\begin{abstract}
+A machine paraphrase preserves \emph{what} a text says while rewriting \emph{how} it says it.
+Applied repeatedly, this poses a Ship-of-Theseus question for authorship: after three rounds
+of large-language-model (LLM) paraphrasing, does the document still carry its author's identity?
+We measure identity decay quantitatively, tracking generation-by-generation which linguistic
+properties are destroyed first and which persist.
+This update presents our preprocessing of the full corpus (all seven domains and sources) and
+baseline experiments on 700 human-authored documents: surface metrics (BLEU-4, ROUGE-L), meaning
+metrics (BERTScore, SBERT cosine) and lexical-stylometric features across paraphrase generations
+T0--T3 for seven LLM paraphraser configurations and a rule-based WordNet baseline. Across all
+paraphrasers, surface overlap collapses after a single pass while meaning is largely retained;
+the timing of the loss and the direction of stylistic change are paraphraser-specific.
+Comparing ten lexical, syntactic and semantic feature families per document on a common scale
+(retention relative to an unrelated same-domain document), we find that style is replaced long
+before meaning: lexical and syntactic features lose most of their signal in the first pass, the
+syntactic skeleton as fast as the lexical skin, while meaning stays $\approx$85\% intact.
+\end{abstract}
+
+\maketitle
+
+\input{sections/introduction}
+\input{sections/related_work}
+\input{sections/methodology}
+\input{sections/experiments}
+\input{sections/conclusion}
+
+%% ─────────────────────────────────────────────────────────────────────────────
+\bibliographystyle{ACM-Reference-Format}
+\bibliography{references}
+
+\end{document}

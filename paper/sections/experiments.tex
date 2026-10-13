@@ -1,0 +1,332 @@
+%% ─────────────────────────────────────────────────────────────────────────────
+\section{Experimentation and Initial Results}
+%% ─────────────────────────────────────────────────────────────────────────────
+
+\subsection{Experimental Setup}
+
+\noindent\textbf{Corpus.} 700 Human documents (100 per domain), each with T1--T3 chains from
+seven Ship of Theseus configurations plus the WordNet baseline:
+$700 \times 3 \times 8 = 16{,}800$ paraphrased documents.
+We analyse \textbf{ChatGPT} in detail and compare all paraphrasers at T3.
+
+\noindent\textbf{Similarity metrics (each T$k$ vs.\ its T0).} Every T$k$ is compared with T0, not
+with T$k\!-\!1$, so scores express cumulative divergence from the human original.
+\begin{itemize}[noitemsep,topsep=2pt]
+  \item \emph{Surface:} BLEU-4 (lower-cased whitespace tokens, Chen--Cherry smoothing method~4,
+        averaged over documents) and ROUGE-L F1 (with stemming).
+  \item \emph{Meaning:} BERTScore F1 (distilbert-base-uncased) and SBERT cosine similarity
+        (all-MiniLM-L6-v2). Raw BERTScore assigns $\approx$0.67 even to unrelated text, so we also
+        report it \emph{rescaled} with the official baseline~\cite{zhang2020bertscore}
+        ($(F-0.666)/(1-0.666)$), which maps unrelated text to $\approx$0.
+\end{itemize}
+BLEU and ROUGE-L measure word overlap, not meaning: a faithful paraphrase scores low on both.
+We therefore read them as measures of surface replacement and use BERTScore and SBERT for meaning.
+Both embedding models have a fixed input window (512 subword tokens for BERTScore, 256 for SBERT),
+so the tail of the longest documents (CMV, WP) is not seen by these two metrics.
+
+\noindent\textbf{Stylometric features (corpus averages):} type--token ratio (TTR), function-word
+ratio, average sentence length, punctuation density (marks per 100 words), and average word length.
+The per-document feature families used for RQ1 are described in Section~\ref{sec:rq1}.
+
+\subsection{Surface vs.\ Meaning Decay (ChatGPT)}
+
+Table~\ref{tab:semantic_metrics} and Figure~\ref{fig:decay} show the decay for ChatGPT chains.
+
+\begin{table}[h]
+\small
+\centering
+\caption{Similarity to T0 for ChatGPT chains (mean over 700 Human docs, 7 domains).
+BERTSc.\ (resc.) is BERTScore rescaled so unrelated text $\approx$ 0.}
+\label{tab:semantic_metrics}
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{lccccc}
+\toprule
+\textbf{Gen.} & \textbf{BLEU-4} & \textbf{ROUGE-L} & \textbf{BERTSc.} & \textbf{BERTSc.\ (resc.)} & \textbf{SBERT} \\
+\midrule
+T0 & 1.000 & 1.000 & 1.000 & 1.000 & 1.000 \\
+T1 & 0.192 & 0.506 & 0.884 & 0.653 & 0.900 \\
+T2 & 0.164 & 0.461 & 0.872 & 0.615 & 0.884 \\
+T3 & 0.137 & 0.425 & 0.864 & 0.592 & 0.875 \\
+\midrule
+\emph{Drop T0$\to$T3} & \emph{86.3\%} & \emph{57.5\%} & \emph{13.6\%} & \emph{40.8\%} & \emph{12.5\%} \\
+\bottomrule
+\end{tabular}}
+\end{table}
+
+\textbf{Surface form is replaced almost entirely in one pass.} BLEU-4 falls to 0.192 at T1, which is
+94\% of its total T0$\to$T3 drop, and ROUGE-L loses half its value. Later passes change
+comparatively little.
+\textbf{Meaning is largely retained.} SBERT drops only 12.5\% over three generations. Rescaled
+BERTScore drops more (40.8\%) because it matches individual tokens and so also penalises
+rewording; it still stays far above the unrelated-text level of 0.
+\textbf{Decay converges.} SBERT goes 0.900 $\to$ 0.884 $\to$ 0.875: repeated paraphrasing by the
+same model settles rather than drifting steadily away.
+Together these support \textbf{RQ1}: the lexical ``planks'' are replaced first and almost
+completely, while the semantic ``hull'' survives.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.95\columnwidth]{decay_curves/chatgpt/semantic_decay.png}
+\caption{Similarity to T0 across generations for ChatGPT chains (700 docs). BLEU-4 and ROUGE-L
+collapse at T1; BERTScore and SBERT retain most of their value.}
+\label{fig:decay}
+\end{figure}
+
+\subsection{Paraphraser Comparison}
+
+Table~\ref{tab:paraphrasers} compares all paraphrasers at T3.
+
+\begin{table}[h]
+\small
+\centering
+\caption{Similarity to T0 at T3 by paraphraser (700 docs), sorted by SBERT. Last column: share of
+the T0$\to$T3 SBERT loss already incurred at T1.}
+\label{tab:paraphrasers}
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{lccccr}
+\toprule
+\textbf{Paraphraser} & \textbf{BLEU-4} & \textbf{ROUGE-L} & \textbf{BERTSc.\ (resc.)} & \textbf{SBERT} & \textbf{@T1} \\
+\midrule
+Pegasus (slight)        & 0.643 & 0.810 & 0.830 & 0.925 & 41\% \\
+DIPPER (low)            & 0.306 & 0.561 & 0.716 & 0.889 & 60\% \\
+PaLM2                   & 0.277 & 0.541 & 0.659 & 0.876 & 80\% \\
+ChatGPT                 & 0.137 & 0.425 & 0.592 & 0.875 & 80\% \\
+Pegasus (full)          & 0.237 & 0.530 & 0.609 & 0.820 & 67\% \\
+WordNet (rule-based)    & 0.400 & 0.756 & 0.698 & 0.785 & 37\% \\
+DIPPER                  & 0.058 & 0.247 & 0.461 & 0.724 & 64\% \\
+DIPPER (high)$^\dagger$ & 0.003 & 0.089 & 0.037 & 0.056 & -- \\
+\bottomrule
+\end{tabular}}
+\\[2pt]{\footnotesize $^\dagger$Corpus artifact: outputs are largely unrelated to the source (Section~3.2).}
+\end{table}
+
+Figure~\ref{fig:trajectories} plots each paraphraser's path from T0 to T3 in the plane of
+wording kept (BLEU-4) against meaning kept (SBERT). Every path starts at the original (1,1) and
+runs far to the left but only slightly down: all paraphrasers sit well above the $y=x$ line, i.e.\
+they discard wording much faster than meaning.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=\columnwidth]{decay_curves/paraphraser_trajectories.png}
+\caption{Decay paths T0$\to$T3 per paraphraser (700 docs): wording kept (BLEU-4) vs.\ meaning kept
+(SBERT), each relative to T0. ChatGPT moves almost straight left (wording replaced, meaning kept);
+WordNet moves diagonally (meaning lost with wording); DIPPER loses most of both. DIPPER (high) is
+omitted (unrelated outputs).}
+\label{fig:trajectories}
+\end{figure}
+
+\textbf{The surface/meaning gap holds for every LLM paraphraser}, but its size varies. ChatGPT and
+PaLM2 retain the same meaning (SBERT 0.875 vs.\ 0.876), yet ChatGPT keeps half of PaLM2's word
+overlap (BLEU 0.137 vs.\ 0.277): it rewrites more aggressively at no semantic cost.
+Conservative settings (Pegasus-slight, DIPPER-low) change least; default DIPPER removes the most
+surface overlap (BLEU 0.058) and also loses the most meaning (SBERT 0.724).
+
+\textbf{LLMs and the rule-based simulator decay in opposite ways.} WordNet keeps three times
+ChatGPT's BLEU (0.400 vs.\ 0.137) yet loses more meaning by SBERT (0.785 vs.\ 0.875): synonym
+substitution keeps the syntactic skeleton but breaks meaning, whereas an LLM rewrites the skeleton
+and keeps the meaning. Rule-based simulation is therefore not a substitute for real LLM chains.
+The two meaning metrics disagree here (rescaled BERTScore ranks WordNet above ChatGPT, 0.698 vs.\
+0.592) because token-level matching rewards WordNet's preserved word order; SBERT compares the
+whole-document meaning. We report both for this reason.
+
+\textbf{Sharp vs.\ gradual loss depends on the paraphraser.} ChatGPT and PaLM2 incur 80\% of their
+three-round SBERT loss at T1, whereas DIPPER (64\%), Pegasus-full (67\%) and WordNet (37\%) lose
+meaning more gradually. This is a first semantic-level signal for \textbf{RQ2}'s question of
+whether identity is lost sharply at T1; the attribution experiments will test it directly.
+
+\textbf{DIPPER (high) is excluded from interpretation.} Its rescaled BERTScore (0.037) and SBERT
+(0.056) are at the level of unrelated text, confirming the preprocessing check.
+
+\subsection{Domain Comparison}
+
+Table~\ref{tab:domain_metrics} reports SBERT at T3 by domain for four representative paraphrasers.
+
+\begin{table}[h]
+\small
+\centering
+\caption{SBERT similarity to T0 at T3 by domain (100 Human docs per domain).}
+\label{tab:domain_metrics}
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Domain} & \textbf{ChatGPT} & \textbf{PaLM2} & \textbf{DIPPER (low)} & \textbf{Pegasus (full)} \\
+\midrule
+Science (SciGen) & 0.947 & 0.969 & 0.925 & 0.857 \\
+Summary (TLDR)   & 0.924 & 0.944 & 0.906 & 0.813 \\
+News (XSUM)      & 0.888 & 0.912 & 0.870 & 0.787 \\
+Review (Yelp)    & 0.854 & 0.859 & 0.887 & 0.831 \\
+QA (ELI5)        & 0.850 & 0.828 & 0.867 & 0.827 \\
+Opinion (CMV)    & 0.848 & 0.808 & 0.906 & 0.822 \\
+Story (WP)       & 0.817 & 0.810 & 0.863 & 0.801 \\
+\bottomrule
+\end{tabular}}
+\end{table}
+
+\textbf{Technical and factual text keeps the most meaning.} Science, summaries and news rank highest
+for ChatGPT and PaLM2: dense terminology, named entities and numbers must be copied, which anchors
+meaning. \textbf{Creative and argumentative text keeps the least}: stories and opinions give the
+paraphraser freedom to restructure narrative and rhetoric. Long documents in these domains are
+also partly outside the SBERT window, which may contribute.
+\textbf{Domain interacts with the paraphraser.} PaLM2 is the most domain-sensitive: it copies
+heavily in science and news (BLEU 0.50 and 0.42) but almost fully rewrites opinion text (BLEU
+0.11), while DIPPER (low) is nearly flat across domains. Domain will therefore be modelled jointly
+with the paraphraser in later experiments.
+
+\subsection{Stylometric Feature Evolution}
+
+Table~\ref{tab:features} and Figure~\ref{fig:features} track stylometric features for ChatGPT.
+
+\begin{table}[h]
+\small
+\centering
+\caption{Stylometric features across ChatGPT generations (700 Human docs).}
+\label{tab:features}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Feature} & \textbf{T0} & \textbf{T1} & \textbf{T2} & \textbf{T3} \\
+\midrule
+Type--Token Ratio          & 0.629 & 0.670 & 0.678 & 0.682 \\
+Function-Word Ratio        & 0.463 & 0.439 & 0.432 & 0.428 \\
+Avg.\ Sentence Length      & 18.44 & 18.50 & 18.65 & 18.55 \\
+Punct.\ Density (per 100w) & 16.77 & 15.70 & 15.46 & 15.41 \\
+Avg.\ Word Length          & 4.679 & 5.106 & 5.165 & 5.215 \\
+Avg.\ Doc.\ Length (words) & 248.8 & 195.1 & 188.4 & 183.8 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{ChatGPT shortens and formalises.} Documents lose 22\% of their length at T1 and 26\% by T3.
+Average word length rises sharply (4.68 $\to$ 5.22 characters) while the function-word ratio
+(0.463 $\to$ 0.428) and punctuation density (16.8 $\to$ 15.4) fall: everyday words are replaced by
+longer, more formal vocabulary. TTR rises (0.629 $\to$ 0.682); because TTR increases mechanically as
+documents get shorter, we also measure the length-robust MATTR (50-word window), which rises too
+(0.808 $\to$ 0.833, paired Cohen's $d_z = 0.61$): ChatGPT genuinely diversifies vocabulary.
+Mean sentence length is stable ($\approx$18.5 words), but its per-document spread falls
+(standard deviation 8.3 $\to$ 6.1 words, $d_z=-0.61$): sentence rhythm becomes more uniform.
+As with the similarity metrics, most change happens at T1.
+
+\textbf{Each paraphraser pushes style in its own direction.} At T3, DIPPER moves opposite to
+ChatGPT: function-word ratio rises (0.463 $\to$ 0.527) and word length falls (4.68 $\to$ 4.41).
+Pegasus-full splits sentences (18.4 $\to$ 11.9 words) and raises punctuation density
+(16.8 $\to$ 18.1). PaLM2 stays close to the human values (function-word ratio 0.470, word length
+4.82). These consistent, paraphraser-specific shifts are a first sign of the recoverable
+``wood grain'' targeted by \textbf{RQ3}.
+
+Figure~\ref{fig:scatter} places each ChatGPT generation by semantic retention (SBERT) and lexical
+change (TTR), both relative to T0: the largest move happens between T0 and T1, after which
+both quantities change little, mirroring the convergence seen in Table~\ref{tab:semantic_metrics}.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.95\columnwidth]{decay_curves/chatgpt/feature_evolution.png}
+\caption{Stylometric feature evolution across T0--T3 for ChatGPT (700 docs). Word length rises and
+function-word ratio falls; sentence length is stable.}
+\label{fig:features}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.95\columnwidth]{decay_curves/chatgpt/semantic_vs_stylistic.png}
+\caption{Semantic retention (SBERT) vs.\ stylistic change (TTR), both normalised to T0, across
+ChatGPT generations.}
+\label{fig:scatter}
+\end{figure}
+
+\subsection{RQ1: Which Planks Are Replaced First?}
+\label{sec:rq1}
+
+Corpus averages can hide change: a feature can keep its mean while every document moves. For
+RQ1 we therefore compare each document with \emph{its own} T0, separately for ten feature
+families (``planks''), all computed from one spaCy parse (\texttt{en\_core\_web\_sm}):
+
+\begin{itemize}[noitemsep,topsep=2pt]
+  \item \emph{Lexical (skin):} word choice (Jaccard distance of word sets), function-word profile
+        (relative frequencies of 198 function words), punctuation profile (12 marks), lexical
+        richness (MATTR, average word length).
+  \item \emph{Syntactic (skeleton):} sentence shape (mean and standard deviation of sentence
+        length), Universal POS distribution, dependency-label distribution, tree depth (mean and
+        maximum sentence depth, mean dependency distance), readability (Flesch--Kincaid grade).
+  \item \emph{Meaning:} SBERT embedding (cosine distance).
+\end{itemize}
+Distributions are compared with the Jensen--Shannon distance and scalar features with the
+root-mean-square difference of $z$-scores (standardised over all T0 documents).
+
+\noindent\textbf{A common scale.} Raw distances of different families are not comparable, so each
+is divided by the distance between the document's T0 and five \emph{unrelated} T0 documents of the
+same domain: $\mathit{nd} = d(\mathrm{T}k, \mathrm{T0}) / d(\mathrm{T0}', \mathrm{T0})$. Retention
+$R = 1 - \overline{\mathit{nd}}$ is 1 when the family is unchanged and 0 when the paraphrase is as
+different from its source as another author's document is; $R<0$ means the paraphraser pushes the
+text \emph{beyond} that, towards a style of its own. We report 95\% bootstrap confidence intervals
+(1{,}000 resamples), paired one-sided Wilcoxon tests of $\mathit{nd}_{\text{style}} >
+\mathit{nd}_{\text{meaning}}$ and of $\mathit{nd}(\mathrm{T}k{+}1) > \mathit{nd}(\mathrm{T}k)$ with
+Holm correction, and rank-biserial effect sizes.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=\columnwidth]{decay_curves/chatgpt/linguistic_delta.png}
+\caption{Retention of each feature family vs.\ T0 for ChatGPT chains (700 docs), sorted with the
+first-replaced family on top. Every style family has lost most of its signal at T1; meaning keeps
+0.85 at T3. Readability and lexical richness fall below 0: ChatGPT moves them further than the
+gap between two human authors.}
+\label{fig:delta}
+\end{figure}
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=0.85\textwidth]{decay_curves/retention_heatmap.png}
+\caption{Retention at T3 for every feature family and paraphraser (DIPPER-high excluded).
+Blue: share of the original signal kept; red: pushed beyond an unrelated document. Meaning (bottom
+row) is the most retained family for every LLM paraphraser.}
+\label{fig:retention}
+\end{figure*}
+
+\noindent\textbf{Style goes, meaning stays.} For ChatGPT (Figure~\ref{fig:delta}) every style
+family retains 0.20--0.34 at T3, or less, while meaning retains 0.85 (95\% CI 0.85--0.86). The
+pattern holds for every LLM paraphraser (Figure~\ref{fig:retention}): meaning is always the most
+retained family, and in 61 of 63 paraphraser $\times$ family tests at T1 the style distance is
+significantly larger than the meaning distance (Holm $p<0.05$). The two exceptions are both
+WordNet (function words and sentence shape), whose word-for-word substitution leaves function
+words and sentence boundaries in place while damaging meaning; it is the only paraphraser for
+which some style families outlast meaning.
+
+\noindent\textbf{The skeleton goes with the skin.} Syntactic families are \emph{not} more durable
+than lexical ones for LLM paraphrasers. Mean retention at T3 (lexical vs.\ syntactic): ChatGPT 0.15
+vs.\ 0.14, PaLM2 0.33 vs.\ 0.30, DIPPER 0.08 vs.\ 0.19. Pegasus-full restructures most aggressively
+(syntactic $-0.53$): it splits sentences (18.3 $\to$ 12.7 words, $d_z=-1.04$), flattens parse trees
+(depth 5.2 $\to$ 4.0, $d_z=-1.36$) and lowers the reading grade (9.8 $\to$ 6.6). Among style
+families the POS profile is the most durable for ChatGPT, PaLM2 and DIPPER.
+
+\noindent\textbf{Most planks are replaced in the first pass.} For ChatGPT and PaLM2, 82--92\% of each
+style family's three-round loss occurs at T1; DIPPER 72--86\%; conservative settings and WordNet
+spread it out (Pegasus-slight 41--57\%, WordNet 43--87\%). Later passes still change every family
+significantly (Holm $p<0.05$ in 99\% of T1$\to$T2 and 100\% of T2$\to$T3 tests), but by small
+amounts (ChatGPT median $\Delta\mathit{nd}$ 0.00--0.08).
+
+\noindent\textbf{Paraphrasers replace style with their own.} Negative retention marks a systematic,
+same-direction shift. ChatGPT raises the reading grade (9.8 $\to$ 12.4, $d_z=1.05$) and word length
+(4.68 $\to$ 5.21, $d_z=1.50$) and uses fewer pronouns (0.079 $\to$ 0.064 of tokens, $d_z=-0.53$);
+DIPPER does the opposite on word length (4.68 $\to$ 4.42) and lexical richness (MATTR 0.81 $\to$
+0.77) and adds determiners (0.083 $\to$ 0.105, $d_z=0.70$). The direction of change identifies the
+paraphraser, which motivates RQ3.
+
+\noindent\textbf{Domains.} For ChatGPT, meaning retention at T3 ranges from 0.77 (stories) to 0.94
+(science), and mean style retention from $-0.10$ (opinion) to 0.35 (science): technical text keeps
+more of both, argumentative and narrative text the least.
+
+\noindent\textbf{Preliminary answer to RQ1.} Under LLM paraphrasing, \emph{style is replaced long
+before meaning}: after a single pass of ChatGPT, PaLM2 or DIPPER the style families have moved
+55--90\% of the way to an unrelated author's style (some beyond it), while 79--88\% of the meaning
+is retained; the syntactic
+skeleton is replaced about as fast as the lexical skin, and several features are not just erased
+but overwritten with a paraphraser-specific style.
+
+\subsection{Limitations of the Current Analysis}
+
+Results cover Human-authored T0 only; LLM-authored originals are processed but not yet analysed.
+SBERT and BERTScore see only the first 256/512 subword tokens of long documents. DIPPER (high)
+chains are unusable as released. Distribution features (function words, punctuation, POS,
+dependencies) are noisier for short texts, and paraphrases are shorter than their sources, which
+can inflate their distances; syntactic features rely on a small parser that may err more on
+paraphrased text; Flesch--Kincaid uses a heuristic syllable count. The unrelated-document baseline
+uses five partners per document from the same domain, so retention is relative to within-domain
+variation.

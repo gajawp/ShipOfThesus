@@ -1,0 +1,5 @@
+generation,ttr,function_word_ratio,avg_sentence_length,punctuation_density,avg_word_length
+T0,0.629,0.4633,18.4412,16.7671,4.6785
+T1,0.6003,0.5133,18.6392,17.5844,4.477
+T2,0.6029,0.5235,18.6113,17.3505,4.4285
+T3,0.6081,0.5266,18.5901,17.2739,4.4068

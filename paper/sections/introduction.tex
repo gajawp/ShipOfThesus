@@ -1,0 +1,19 @@
+%% ─────────────────────────────────────────────────────────────────────────────
+\section{Problem Description}
+%% ─────────────────────────────────────────────────────────────────────────────
+
+A machine paraphrase preserves \emph{what} a text says while rewriting \emph{how} it says it.
+Applied repeatedly, this poses the Ship of Theseus question for authorship: after a document
+has been paraphrased three times by a large language model, whose text is it?
+Authorship attribution, machine-generated text (MGT) detection, plagiarism analysis, and
+forensic provenance all assume a stable stylistic signal survives in a document; paraphrasing
+cheaply defeats that assumption.
+
+We therefore measure identity decay \emph{quantitatively} rather than as a single pass/fail
+outcome, tracking generation by generation which linguistic properties are destroyed first and
+which persist. Three questions organize the work:
+\textbf{(RQ1)} Which stylometric features decay before semantic content does?
+\textbf{(RQ2)} At which generation does authorship attribution become unreliable?
+\textbf{(RQ3)} Does the paraphraser leave a recoverable fingerprint, so that authorial identity
+is not merely erased but \emph{replaced}?
+Our contribution is a decay curve that separates human-author signal loss from model-fingerprint gain.

@@ -1,0 +1,93 @@
+{
+  "paraphrasers": {
+    "chatgpt": {
+      "label_id": 0,
+      "model": "ChatGPT",
+      "setting": "default",
+      "version_names": {
+        "T1": "chatgpt",
+        "T2": "chatgpt_chatgpt",
+        "T3": "chatgpt_chatgpt_chatgpt"
+      },
+      "excluded": false
+    },
+    "palm": {
+      "label_id": 1,
+      "model": "PaLM2",
+      "setting": "default",
+      "version_names": {
+        "T1": "palm",
+        "T2": "palm_palm",
+        "T3": "palm_palm_palm"
+      },
+      "excluded": false
+    },
+    "dipper": {
+      "label_id": 2,
+      "model": "DIPPER",
+      "setting": "default",
+      "version_names": {
+        "T1": "dipper",
+        "T2": "dipper_dipper",
+        "T3": "dipper_dipper_dipper"
+      },
+      "excluded": false
+    },
+    "dipper(low)": {
+      "label_id": 3,
+      "model": "DIPPER",
+      "setting": "low diversity",
+      "version_names": {
+        "T1": "dipper(low)",
+        "T2": "dipper(low)_dipper(low)",
+        "T3": "dipper(low)_dipper(low)_dipper(low)"
+      },
+      "excluded": false
+    },
+    "dipper(high)": {
+      "label_id": 4,
+      "model": "DIPPER",
+      "setting": "high diversity",
+      "version_names": {
+        "T1": "dipper(high)",
+        "T2": "dipper(high)_dipper(high)",
+        "T3": "dipper(high)_dipper(high)_dipper(high)"
+      },
+      "excluded": true
+    },
+    "pegasus(full)": {
+      "label_id": 5,
+      "model": "Pegasus",
+      "setting": "all sentences",
+      "version_names": {
+        "T1": "pegasus(full)",
+        "T2": "pegasus(full)_pegasus(full)",
+        "T3": "pegasus(full)_pegasus(full)_pegasus(full)"
+      },
+      "excluded": false
+    },
+    "pegasus(slight)": {
+      "label_id": 6,
+      "model": "Pegasus",
+      "setting": "25% of sentences",
+      "version_names": {
+        "T1": "pegasus(slight)",
+        "T2": "pegasus(slight)_pegasus(slight)",
+        "T3": "pegasus(slight)_pegasus(slight)_pegasus(slight)"
+      },
+      "excluded": false
+    }
+  },
+  "sources": {
+    "Human": 0,
+    "OpenAI": 1,
+    "LLAMA": 2,
+    "PaLM": 3,
+    "Tsinghua": 4,
+    "BigScience": 5,
+    "Eleuther-AI": 6
+  },
+  "notes": {
+    "dipper(high)": "excluded: released chains are largely unrelated to their source text (sanity check in preprocess.py)"
+  }
+}

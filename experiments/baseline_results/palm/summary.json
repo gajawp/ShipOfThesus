@@ -1,0 +1,81 @@
+{
+  "paraphraser": "palm",
+  "n_documents": 700,
+  "domains": {
+    "news": 100,
+    "opinion": 100,
+    "qa": 100,
+    "review": 100,
+    "science": 100,
+    "story": 100,
+    "summary": 100
+  },
+  "metrics": [
+    {
+      "generation": "T0",
+      "bleu": 1.0,
+      "rouge_l": 1.0,
+      "bertscore_f1": 1.0,
+      "bertscore_rescaled": 1.0,
+      "sbert_cosine": 1.0
+    },
+    {
+      "generation": "T1",
+      "bleu": 0.3599,
+      "rouge_l": 0.6219,
+      "bertscore_f1": 0.9047,
+      "bertscore_rescaled": 0.7144,
+      "sbert_cosine": 0.9
+    },
+    {
+      "generation": "T2",
+      "bleu": 0.3051,
+      "rouge_l": 0.572,
+      "bertscore_f1": 0.8934,
+      "bertscore_rescaled": 0.6806,
+      "sbert_cosine": 0.8858
+    },
+    {
+      "generation": "T3",
+      "bleu": 0.2772,
+      "rouge_l": 0.5406,
+      "bertscore_f1": 0.8861,
+      "bertscore_rescaled": 0.6588,
+      "sbert_cosine": 0.8755
+    }
+  ],
+  "features": [
+    {
+      "generation": "T0",
+      "ttr": 0.629,
+      "function_word_ratio": 0.4633,
+      "avg_sentence_length": 18.4412,
+      "punctuation_density": 16.7671,
+      "avg_word_length": 4.6785
+    },
+    {
+      "generation": "T1",
+      "ttr": 0.634,
+      "function_word_ratio": 0.4718,
+      "avg_sentence_length": 17.8278,
+      "punctuation_density": 16.1855,
+      "avg_word_length": 4.7704
+    },
+    {
+      "generation": "T2",
+      "ttr": 0.6348,
+      "function_word_ratio": 0.4701,
+      "avg_sentence_length": 17.9492,
+      "punctuation_density": 16.284,
+      "avg_word_length": 4.8062
+    },
+    {
+      "generation": "T3",
+      "ttr": 0.6353,
+      "function_word_ratio": 0.4698,
+      "avg_sentence_length": 18.0773,
+      "punctuation_density": 15.9006,
+      "avg_word_length": 4.82
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+%% ─────────────────────────────────────────────────────────────────────────────
+\section{Plan for Next Steps}
+%% ─────────────────────────────────────────────────────────────────────────────
+
+\noindent\textbf{Completed (Weeks 1--8).} Corpus preprocessing, baseline similarity, stylometric
+and syntactic feature families, and the preliminary RQ1 answer (Section~\ref{sec:rq1}). Remaining
+for RQ1: repeat the analysis for LLM-authored T0 texts and control distribution features for length.
+
+\noindent\textbf{Weeks 9--10 -- Authorship attribution (RQ2).}
+Train stylometric (SVM) and fine-tuned RoBERTa classifiers to identify the seven sources on the
+train files (key-level train/validation split), then evaluate on T0--T3 of the paraphrased files
+to locate the ``point of no return'' per paraphraser.
+
+\noindent\textbf{Weeks 10--12 -- Paraphraser fingerprinting (RQ3).}
+Train a paraphraser classifier on T1--T3 texts (excluding DIPPER-high), with a key-level split so
+no document appears in both training and test; visualise identity trajectories with t-SNE,
+supported by quantitative cluster-separation measures.
+
+\noindent\textbf{Weeks 13--14 -- Dashboard and final paper.}
+Streamlit ``decay dashboard'', ablations, and the final ACL-format paper with a limitations section.

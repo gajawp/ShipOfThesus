@@ -1,0 +1,91 @@
+%% ─────────────────────────────────────────────────────────────────────────────
+\section{Dataset and Preprocessing}
+%% ─────────────────────────────────────────────────────────────────────────────
+
+\subsection{Source Corpus: Ship of Theseus}
+
+Our corpus is the \emph{Ship of Theseus} paraphrased dataset of Tripto et al.~\cite{tripto2024ship}.
+It is organised along three axes:
+
+\begin{itemize}[noitemsep,topsep=2pt]
+  \item \textbf{Seven datasets (domains):} XSUM (BBC news), Yelp (reviews), CMV (Reddit
+        ChangeMyView arguments), ELI5 (Reddit explanatory answers), SciGen (scientific writing),
+        TLDR (Reddit summaries) and WP (Reddit WritingPrompts stories).
+  \item \textbf{Seven sources} that wrote the original text: Human, and six LLMs (OpenAI, LLaMA,
+        PaLM, Tsinghua, BigScience, Eleuther-AI) prompted with the first 30 tokens of the matching
+        human text. Human and LLM texts from the same prompt share a document \texttt{key}.
+  \item \textbf{Seven paraphraser configurations} of four models, each applied three times in
+        sequence (T0$\to$T1$\to$T2$\to$T3): ChatGPT (GPT-3.5-turbo), PaLM2, Pegasus in a
+        \emph{full} (all sentences) and \emph{slight} (25\% of sentences) setting, and
+        DIPPER~\cite{krishna2023paraphrasing} at default, \emph{low} and \emph{high} lexical diversity.
+\end{itemize}
+
+Each dataset ships as two files. The \textbf{paraphrased} file holds every original with its 21
+paraphrases (7 configurations $\times$ T1--T3), keyed by \texttt{source}, \texttt{key} and
+\texttt{version\_name} (\texttt{original}, \texttt{chatgpt}, \texttt{chatgpt\_chatgpt}, \ldots).
+The \textbf{train} file holds a disjoint set of un-paraphrased texts from the same seven sources.
+We use the paraphrased files for decay analysis (RQ1), paraphraser identification (RQ3) and as the
+attribution test set (RQ2), and the train files to train the attribution model (RQ2).
+
+As a controlled reference we keep our Phase-1 rule-based \textbf{WordNet} simulator, which
+replaces 25\%/38\%/50\% of content words with same-POS WordNet synonyms at T1/T2/T3.
+
+\subsection{Preprocessing Pipeline}
+
+All 14 files are processed by one logged pipeline (\texttt{src/data/preprocess.py}):
+
+\noindent\textbf{1. Cleaning.} HTML entities are decoded, Unicode is NFKC-normalised, curly quotes
+and dashes are mapped to ASCII, and whitespace is collapsed. Sources and paraphrasers format text
+differently (e.g.\ DIPPER outputs begin with a space; some models emit curly quotes), so without
+this step punctuation and tokenisation features would measure formatting rather than style.
+About 44\% of paraphrased rows were modified; no words or punctuation marks are removed.
+We deliberately do \emph{not} lower-case, remove stopwords, stem, or truncate: these would
+destroy the stylistic signal under study, and truncating T0 would misalign it with paraphrases
+produced from the full document.
+
+\noindent\textbf{2. Chain alignment.} Rows are pivoted to one row per (source, key) holding T0 and
+all 21 paraphrases. Only documents with a complete chain for \emph{all seven} configurations are
+kept, so every paraphraser is compared on identical texts. Retention is 90--97\% for most
+domains but 58\% for SciGen and 69\% for WP, where many PaLM chains are missing.
+
+\noindent\textbf{3. Length filter.} Documents whose T0 has fewer than 30 words are removed
+($\approx$2\%), since ratio features and BLEU are unstable on very short texts.
+
+\noindent\textbf{4. Sanity checks.} For each configuration we count unchanged paraphrase steps
+(mostly Pegasus-slight and PaLM; kept, as they are genuine model behaviour) and T1 outputs sharing
+fewer than 10\% of their words with T0. The latter flags \textbf{DIPPER (high)} in five of seven
+domains (54--95\% of outputs): its released chains are largely unrelated text (e.g.\ narrative
+fiction in place of a news article).
+
+\noindent\textbf{5. Leakage-free splits.} The train files are split 85/15 into train/validation
+\emph{by key}, so a human text and the LLM texts generated from its prompt never straddle the
+split. We verified that the paraphrased and train files share no keys, so RQ2 test documents are
+never seen in training.
+
+\noindent\textbf{Output.} 16{,}386 aligned chains (2{,}269 Human) and 19{,}200 training texts.
+For the analyses in this update we sample \textbf{100 Human documents per domain} (700 in total,
+seed 42), since RQ1 concerns the decay of a human author's identity.
+Table~\ref{tab:corpus_stats} summarises this sample.
+
+\begin{table}[h]
+\small
+\centering
+\caption{Human T0 originals used in this update (100 per domain, after cleaning and the
+30-word filter). Vocabulary counts lower-cased alphabetic tokens.}
+\label{tab:corpus_stats}
+\begin{tabular}{lrrrr}
+\toprule
+\textbf{Domain} & \textbf{Docs} & \textbf{Avg.\ words} & \textbf{Avg.\ sents} & \textbf{Vocab} \\
+\midrule
+XSUM (news)       & 100 & 300.0 & 15.1 & 5{,}952 \\
+Yelp (review)     & 100 & 131.5 &  9.4 & 2{,}677 \\
+CMV (opinion)     & 100 & 401.8 & 23.9 & 4{,}899 \\
+ELI5 (qa)         & 100 & 242.2 & 12.5 & 4{,}126 \\
+SciGen (science)  & 100 & 163.0 &  7.0 & 3{,}181 \\
+TLDR (summary)    & 100 &  84.7 &  4.8 & 2{,}458 \\
+WP (story)        & 100 & 418.3 & 33.7 & 6{,}280 \\
+\midrule
+Total             & 700 & 248.8 & 15.2 & 15{,}888 \\
+\bottomrule
+\end{tabular}
+\end{table}
