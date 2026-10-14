@@ -40,7 +40,7 @@ from scipy.stats import wilcoxon, rankdata
 from src.data.load_data import load_chains, get_generations
 from src.data.wordnet_baseline import generate_generations
 from src.features.profiles import FAMILIES, STYLE_FAMILIES, text_profiles, family_distance
-from src.similarity.sbert_similarity import get_sbert
+from src.similarity.sbert_similarity import SBERT_METHOD, encode_texts
 from src.utils.config import (RQ1_DIR, BASELINE_DIR, DECAY_FIG_DIR, PARAPHRASERS,
                               EXCLUDED_PARAPHRASERS, GENERATIONS, SEED, N_BASELINE_PARTNERS,
                               N_BOOTSTRAP)
@@ -92,7 +92,7 @@ def load_or_compute(texts_df, refresh=False):
     prof_path = os.path.join(RQ1_DIR, "text_profiles.parquet")
     emb_path = os.path.join(RQ1_DIR, "sbert_embeddings.npy")
     meta_path = os.path.join(RQ1_DIR, "cache_fingerprint.txt")
-    fp = _fingerprint(texts_df["text"].tolist())
+    fp = _fingerprint(texts_df["text"].tolist() + [SBERT_METHOD])
     cached = (not refresh and all(os.path.exists(p) for p in (prof_path, emb_path, meta_path))
               and open(meta_path).read() == fp)
     if cached:
@@ -102,7 +102,7 @@ def load_or_compute(texts_df, refresh=False):
     logger.info(f"  parsing {len(texts_df):,} texts with spaCy (takes a few minutes)...")
     profiles = text_profiles(texts_df["text"].tolist(), logger=logger)
     logger.info("  encoding texts with SBERT...")
-    emb = get_sbert().encode(texts_df["text"].tolist(), batch_size=64, show_progress_bar=False)
+    emb = encode_texts(texts_df["text"].tolist())
     profiles.to_parquet(prof_path, index=False)
     np.save(emb_path, emb)
     with open(meta_path, "w") as f:
