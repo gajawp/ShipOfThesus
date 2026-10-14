@@ -1,91 +1,75 @@
 %% ─────────────────────────────────────────────────────────────────────────────
-\section{Dataset and Preprocessing}
+\section{Dataset}
 %% ─────────────────────────────────────────────────────────────────────────────
 
-\subsection{Source Corpus: Ship of Theseus}
+\subsection{The Ship of Theseus Corpus}
 
-Our corpus is the \emph{Ship of Theseus} paraphrased dataset of Tripto et al.~\cite{tripto2024ship}.
-It is organised along three axes:
-
-\begin{itemize}[noitemsep,topsep=2pt]
+We use the paraphrased corpus released by Tripto et al.~\cite{tripto2024ship}, organised along
+three axes:
+\begin{itemize}[noitemsep,topsep=2pt,leftmargin=*]
   \item \textbf{Seven datasets (domains):} XSUM (BBC news), Yelp (reviews), CMV (Reddit
-        ChangeMyView arguments), ELI5 (Reddit explanatory answers), SciGen (scientific writing),
+        ChangeMyView opinions), ELI5 (Reddit explanatory answers), SciGen (scientific text),
         TLDR (Reddit summaries) and WP (Reddit WritingPrompts stories).
-  \item \textbf{Seven sources} that wrote the original text: Human, and six LLMs (OpenAI, LLaMA,
-        PaLM, Tsinghua, BigScience, Eleuther-AI) prompted with the first 30 tokens of the matching
-        human text. Human and LLM texts from the same prompt share a document \texttt{key}.
-  \item \textbf{Seven paraphraser configurations} of four models, each applied three times in
-        sequence (T0$\to$T1$\to$T2$\to$T3): ChatGPT (GPT-3.5-turbo), PaLM2, Pegasus in a
-        \emph{full} (all sentences) and \emph{slight} (25\% of sentences) setting, and
-        DIPPER~\cite{krishna2023paraphrasing} at default, \emph{low} and \emph{high} lexical diversity.
+  \item \textbf{Seven sources} that wrote the original T0: Human and six LLMs (OpenAI, LLaMA,
+        PaLM, Tsinghua, BigScience, Eleuther-AI) prompted with the first 30 tokens of the human
+        text, so human and LLM texts from one prompt share a document \texttt{key}.
+  \item \textbf{Seven paraphraser settings} of four models, each applied three times
+        (T0$\to$T1$\to$T2$\to$T3): ChatGPT (GPT-3.5-turbo), PaLM2, Pegasus~\cite{zhang2020pegasus}
+        (\emph{full}: every sentence; \emph{slight}: 25\% of sentences) and
+        DIPPER~\cite{krishna2023paraphrasing} (default, \emph{low} and \emph{high} diversity).
 \end{itemize}
+Each dataset has two files (14 in total). The \textbf{paraphrased} file
+($\approx$420k rows) holds every original with its 21 paraphrases, with columns
+\texttt{source}, \texttt{key}, \texttt{text} and \texttt{version\_name}
+(\texttt{original}, \texttt{chatgpt}, \texttt{chatgpt\_chatgpt}, \ldots). The \textbf{train} file
+($\approx$19.5k rows) holds un-paraphrased texts from the same sources; we verified that it shares
+no key with the paraphrased file. The paraphrased files serve RQ1, RQ3 and the RQ2 test set; the
+train files train the RQ2 attribution models. As a controlled reference we add a rule-based
+\textbf{WordNet} baseline that replaces 25/38/50\% of content words with same-POS synonyms at
+T1/T2/T3.
 
-Each dataset ships as two files. The \textbf{paraphrased} file holds every original with its 21
-paraphrases (7 configurations $\times$ T1--T3), keyed by \texttt{source}, \texttt{key} and
-\texttt{version\_name} (\texttt{original}, \texttt{chatgpt}, \texttt{chatgpt\_chatgpt}, \ldots).
-The \textbf{train} file holds a disjoint set of un-paraphrased texts from the same seven sources.
-We use the paraphrased files for decay analysis (RQ1), paraphraser identification (RQ3) and as the
-attribution test set (RQ2), and the train files to train the attribution model (RQ2).
+\subsection{Preprocessing}
 
-As a controlled reference we keep our Phase-1 rule-based \textbf{WordNet} simulator, which
-replaces 25\%/38\%/50\% of content words with same-POS WordNet synonyms at T1/T2/T3.
+All 14 files pass through one logged pipeline (\url{src/data/preprocess.py}):
+\textbf{(1) Cleaning}: HTML entities decoded, Unicode NFKC-normalised, curly quotes and dashes
+mapped to ASCII, whitespace collapsed. Sources format text differently (DIPPER outputs begin with
+a space; some models emit curly quotes), so without this step punctuation features would measure
+formatting rather than style; $\approx$44\% of rows changed. We deliberately do \emph{not}
+lower-case, remove stop-words, stem or truncate, since that would destroy the stylistic signal
+under study.
+\textbf{(2) Chain alignment}: one row per (source, key) with T0 and all 21 paraphrases, keeping
+only documents complete for all seven settings so every paraphraser is compared on the same texts
+(retention 90--97\%; SciGen 58\% and WP 69\% because many PaLM chains are missing).
+\textbf{(3) Length filter}: T0 under 30 words removed ($\approx$2\%).
+\textbf{(4) Sanity checks}: T1 outputs sharing $<$10\% of their words with T0 are flagged. This
+exposed a corpus artifact: in five of seven domains 54--95\% of \textbf{DIPPER (high)} outputs are
+unrelated to their source (e.g.\ narrative fiction in place of a BBC article), so we exclude that
+setting from interpretation.
+\textbf{(5) Leakage-free splits}: train files split 85/15 by key, so a human text and the LLM texts
+from its prompt never straddle the split.
 
-\subsection{Preprocessing Pipeline}
+The result is 16{,}386 aligned chains (2{,}269 Human) and 19{,}200 training texts. Because RQ1
+concerns the decay of a human author's identity, the analyses below use a fixed sample of
+\textbf{100 Human documents per domain} (700 in total, seed 42; Table~\ref{tab:corpus_stats}).
 
-All 14 files are processed by one logged pipeline (\texttt{src/data/preprocess.py}):
-
-\noindent\textbf{1. Cleaning.} HTML entities are decoded, Unicode is NFKC-normalised, curly quotes
-and dashes are mapped to ASCII, and whitespace is collapsed. Sources and paraphrasers format text
-differently (e.g.\ DIPPER outputs begin with a space; some models emit curly quotes), so without
-this step punctuation and tokenisation features would measure formatting rather than style.
-About 44\% of paraphrased rows were modified; no words or punctuation marks are removed.
-We deliberately do \emph{not} lower-case, remove stopwords, stem, or truncate: these would
-destroy the stylistic signal under study, and truncating T0 would misalign it with paraphrases
-produced from the full document.
-
-\noindent\textbf{2. Chain alignment.} Rows are pivoted to one row per (source, key) holding T0 and
-all 21 paraphrases. Only documents with a complete chain for \emph{all seven} configurations are
-kept, so every paraphraser is compared on identical texts. Retention is 90--97\% for most
-domains but 58\% for SciGen and 69\% for WP, where many PaLM chains are missing.
-
-\noindent\textbf{3. Length filter.} Documents whose T0 has fewer than 30 words are removed
-($\approx$2\%), since ratio features and BLEU are unstable on very short texts.
-
-\noindent\textbf{4. Sanity checks.} For each configuration we count unchanged paraphrase steps
-(mostly Pegasus-slight and PaLM; kept, as they are genuine model behaviour) and T1 outputs sharing
-fewer than 10\% of their words with T0. The latter flags \textbf{DIPPER (high)} in five of seven
-domains (54--95\% of outputs): its released chains are largely unrelated text (e.g.\ narrative
-fiction in place of a news article).
-
-\noindent\textbf{5. Leakage-free splits.} The train files are split 85/15 into train/validation
-\emph{by key}, so a human text and the LLM texts generated from its prompt never straddle the
-split. We verified that the paraphrased and train files share no keys, so RQ2 test documents are
-never seen in training.
-
-\noindent\textbf{Output.} 16{,}386 aligned chains (2{,}269 Human) and 19{,}200 training texts.
-For the analyses in this update we sample \textbf{100 Human documents per domain} (700 in total,
-seed 42), since RQ1 concerns the decay of a human author's identity.
-Table~\ref{tab:corpus_stats} summarises this sample.
-
-\begin{table}[h]
+\begin{table}[t]
 \small
 \centering
-\caption{Human T0 originals used in this update (100 per domain, after cleaning and the
-30-word filter). Vocabulary counts lower-cased alphabetic tokens.}
+\caption{Human T0 sample (100 documents per domain).}
 \label{tab:corpus_stats}
-\begin{tabular}{lrrrr}
+\begin{tabular}{lrrr}
 \toprule
-\textbf{Domain} & \textbf{Docs} & \textbf{Avg.\ words} & \textbf{Avg.\ sents} & \textbf{Vocab} \\
+\textbf{Domain} & \textbf{Avg.\ words} & \textbf{Avg.\ sents} & \textbf{Vocab} \\
 \midrule
-XSUM (news)       & 100 & 300.0 & 15.1 & 5{,}952 \\
-Yelp (review)     & 100 & 131.5 &  9.4 & 2{,}677 \\
-CMV (opinion)     & 100 & 401.8 & 23.9 & 4{,}899 \\
-ELI5 (qa)         & 100 & 242.2 & 12.5 & 4{,}126 \\
-SciGen (science)  & 100 & 163.0 &  7.0 & 3{,}181 \\
-TLDR (summary)    & 100 &  84.7 &  4.8 & 2{,}458 \\
-WP (story)        & 100 & 418.3 & 33.7 & 6{,}280 \\
+XSUM (news)       & 300.0 & 15.1 & 5{,}952 \\
+Yelp (review)     & 131.5 &  9.4 & 2{,}677 \\
+CMV (opinion)     & 401.8 & 23.9 & 4{,}899 \\
+ELI5 (QA)         & 242.2 & 12.5 & 4{,}126 \\
+SciGen (science)  & 163.0 &  7.0 & 3{,}181 \\
+TLDR (summary)    &  84.7 &  4.8 & 2{,}458 \\
+WP (story)        & 418.3 & 33.7 & 6{,}280 \\
 \midrule
-Total             & 700 & 248.8 & 15.2 & 15{,}888 \\
+All (700 docs)    & 248.8 & 15.2 & 15{,}888 \\
 \bottomrule
 \end{tabular}
 \end{table}

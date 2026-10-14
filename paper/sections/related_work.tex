@@ -3,74 +3,68 @@
 %% ─────────────────────────────────────────────────────────────────────────────
 
 \paragraph{Iterative paraphrasing and authorship.}
-In the work done by Tripto et al.~\cite{tripto2024ship} at ACL 2024, the authors ask whether
-a text keeps its original authorship after repeated paraphrasing. They apply four paraphrasers
-(ChatGPT, PaLM2, Pegasus, DIPPER) iteratively over seven datasets, re-running attribution and
-MGT detectors at each generation. They found that attribution accuracy degrades monotonically
-with each round; however, only aggregate accuracy figures are reported, and the specific features
-driving decay are never isolated---a gap our work directly addresses.
+In the work done by Tripto et al.~\cite{tripto2024ship} at ACL 2024, the authors ask whether a
+text keeps its authorship after repeated paraphrasing. They apply four paraphrasers (ChatGPT,
+PaLM2, Pegasus, DIPPER) three times over seven datasets and re-run attribution and
+machine-generated-text (MGT) detectors at each generation. Attribution accuracy degrades with
+every round, but only aggregate accuracy is reported, so \emph{which} features decay is never
+isolated---the gap our work addresses.
 
 \paragraph{Paraphrase as an evasion attack.}
-In the work done by Krishna et al.~\cite{krishna2023paraphrasing} at NeurIPS 2023, the concern
-is detector robustness to evasion. They train DIPPER, an 11B-parameter discourse-level paraphraser
-with controllable lexical diversity and reordering, and propose a retrieval-based defense. A single
-DIPPER pass drives DetectGPT and GPTZero toward chance; however, the retrieval defense presumes
-the generating API logs its outputs, an assumption that is often unrealistic in practice.
+In the work done by Krishna et al.~\cite{krishna2023paraphrasing} at NeurIPS 2023, the concern is
+the robustness of AI-text detectors. They train DIPPER, an 11B-parameter discourse-level
+paraphraser with controllable lexical and order diversity, and propose a retrieval defense. One
+DIPPER pass drives DetectGPT and GPTZero toward chance, but the defense assumes the generating API
+logs its outputs.
 
 \paragraph{Zero-shot MGT detection.}
-In the work done by Mitchell et al.~\cite{mitchell2023detectgpt} at ICML 2023, the goal is
-detecting machine-generated text without labeled data. DetectGPT compares a candidate text's
-log-likelihood against those of small perturbations, exploiting negative curvature in the
-probability surface. It outperforms prior zero-shot baselines, but requires white-box likelihoods
-and collapses entirely under even a single paraphrase pass.
+In the work done by Mitchell et al.~\cite{mitchell2023detectgpt} at ICML 2023, the goal is to
+detect generated text without labeled data. DetectGPT compares a text's log-likelihood with that of
+small perturbations of it, exploiting negative curvature of the model's probability surface. It
+beats prior zero-shot baselines but needs white-box likelihoods and collapses under paraphrasing.
 
 \paragraph{Attribution across neural generators.}
 In the work done by Uchendu et al.~\cite{uchendu2020authorship} at EMNLP 2020, authorship
-attribution is extended beyond human writers to neural text generators and cast as three subtasks.
-They benchmark stylometric, deep-learning, and transformer classifiers across nineteen generators.
-Generators remain separable at generation zero; however, only single-pass text is tested, leaving
-open whether generator signatures survive iterative rewriting.
+attribution is extended from human writers to neural text generators. They benchmark stylometric,
+deep-learning and transformer classifiers on three attribution tasks over nineteen generators.
+Generators are separable, but only single-pass text is tested, leaving open whether signatures
+survive rewriting.
 
 \paragraph{Content-independent author representations.}
-In the work done by Rivera-Soto et al.~\cite{riverasoto2021learning} at EMNLP 2021, the authors
-ask whether a single authorship representation can transfer across topic domains. They train a
-Transformer encoder contrastively on Reddit, Amazon, and fan-fiction so that same-author documents
-embed close together. The embeddings transfer well across topics; however, they remain sensitive
-to topic overlap, a style--content confound that our fixed-source-document design removes.
+In the work done by Rivera-Soto et al.~\cite{riverasoto2021learning} at EMNLP 2021, the question is
+whether one authorship representation transfers across domains. They train a Transformer encoder
+contrastively on Reddit, Amazon and fan-fiction so that same-author documents embed together. The
+embeddings transfer well but remain sensitive to topic overlap, a style--content confound that our
+fixed-source design removes.
 
 \paragraph{Measuring semantic retention.}
-In the work done by Zhang et al.~\cite{zhang2020bertscore} at ICLR 2020, the problem is
-evaluating text generation beyond $n$-gram overlap. BERTScore greedily matches candidate and
-reference tokens using contextual embeddings, tracking human adequacy judgments far better than
-BLEU. BERTScore is blind to style; we therefore pair it with explicit stylometry to separate
-the two axes of identity decay.
+In the work done by Zhang et al.~\cite{zhang2020bertscore} at ICLR 2020, the problem is evaluating
+generated text beyond $n$-gram overlap. BERTScore greedily matches candidate and reference tokens
+by contextual-embedding similarity. It tracks human adequacy judgments far better than
+BLEU~\cite{papineni2002bleu}, but it is blind to style, so we pair it with explicit stylometry.
 
 \paragraph{Distributional gap between neural and human text.}
-In the work done by Pillutla et al.~\cite{pillutla2021mauve} at NeurIPS 2021, MAUVE is
-introduced as a metric that quantifies the distributional gap between neural-generated and
-human text via information-theoretic divergences. MAUVE correlates well with human quality
-judgments and captures fluency degradation invisible to $n$-gram metrics. We draw on MAUVE
-as a complementary evaluation lens for later experiments at the corpus level.
+In the work done by Pillutla et al.~\cite{pillutla2021mauve} at NeurIPS 2021, the problem is
+measuring how far a model's text distribution is from human text. MAUVE compares the two
+distributions in an embedding space using divergence frontiers. It correlates well with human
+quality judgments, but it scores whole corpora, not individual documents, so it cannot trace one
+text's identity across generations.
 
-\paragraph{Watermarking language model outputs.}
-In the work done by Kirchenbauer et al.~\cite{kirchenbauer2023watermark} at ICML 2023, a
-statistical watermark is embedded in LLM outputs by biasing token selection toward a
-pseudo-random ``green'' token list at inference time. The watermark survives mild editing but
-degrades under paraphrasing---directly connecting to our RQ3 on whether paraphraser fingerprints
-are recoverable or erased by downstream editing.
+\paragraph{Watermarking LLM outputs.}
+In the work done by Kirchenbauer et al.~\cite{kirchenbauer2023watermark} at ICML 2023, the goal is
+to make LLM text verifiably detectable. They bias sampling toward a pseudo-random ``green'' token
+list and detect it with a statistical test. The watermark survives light edits but weakens under
+paraphrasing, which motivates asking whether the paraphraser leaves a fingerprint of its own (RQ3).
 
-\paragraph{Human difficulty in detecting generated text.}
-In the work done by Ippolito et al.~\cite{ippolito2020automatic} at ACL 2020, the authors
-study how generation quality (perplexity tier) and sampling strategy affect both human and
-automatic detectability of machine-generated text. Humans are most easily fooled by fluent,
-high-quality outputs; automatic classifiers remain more reliable. This calibrates our baseline
-expectation: as paraphrasing improves fluency of already-fluent LLM text, detection should become
-progressively harder.
+\paragraph{Detection and human judgment.}
+In the work done by Ippolito et al.~\cite{ippolito2020automatic} at ACL 2020, the authors study how
+decoding strategy affects human and automatic detection of generated text. They benchmark three
+sampling methods with expert human raters and fine-tuned BERT classifiers. Sampling that fools
+humans makes text easier for classifiers to detect, so both are needed; yet both rely on surface
+cues that a paraphrase rewrites.
 
 \paragraph{Visual statistical detection.}
-In the work done by Gehrmann et al.~\cite{gehrmann2019gltr} at ACL-SRW 2019, GLTR is presented
-as a tool that visualises token-level statistical signatures of generation, highlighting tokens
-that are unusually predictable given their context. Users assisted by GLTR detect generated text
-at far higher rates than unaided humans. As paraphrase generations accumulate, such token-level
-signatures are progressively destroyed, making GLTR-style detection increasingly unreliable---a
-trend our decay curves can quantify.
+In the work done by Gehrmann et al.~\cite{gehrmann2019gltr} at ACL 2019 (System Demonstrations),
+the goal is to help humans spot generated text. GLTR colours each token by its rank under a
+language model, exposing unusually predictable text. It raised human detection rates from 54\% to
+72\%, but its token-level signal is exactly what a paraphrase replaces.
